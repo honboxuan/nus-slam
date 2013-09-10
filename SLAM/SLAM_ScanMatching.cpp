@@ -6,6 +6,7 @@ OdometryClass::OdometryClass() {
 	Theta = 0;
 }
 
+/*The normal scan matching algorithms are used instead of these
 float ScanMatchingCornersMahalanobis(CornerClass* CornerA,CornerClass* CornerB) {
 	Eigen::Vector3f Innovation;
 	Innovation(0) = CornerB->X-CornerA->X;
@@ -130,7 +131,8 @@ HypothesisItem* ScanMatchingCornersAssociate(CornersHolderClass* CornersA,Corner
 	LinkedListDeallocate(Head);
 
 	return Result;
-}
+}*/
+
 OdometryClass* ScanMatching(PointClass* PointsA,PointClass* PointsB,CornersHolderClass* CornersA,CornersHolderClass* CornersB,HypothesisItem* Hypothesis) {
 	OdometryClass* Result = new OdometryClass;
 	float XBarA = 0, YBarA = 0, XBarB = 0, YBarB = 0;
@@ -142,13 +144,13 @@ OdometryClass* ScanMatching(PointClass* PointsA,PointClass* PointsB,CornersHolde
 			XBarB += CornersB->Corners[Hypothesis->Hypothesis[i]-1].X;
 			YBarB += CornersB->Corners[Hypothesis->Hypothesis[i]-1].Y;
 			//Attempt to use points in neighbourhood
-			for (int j = -2; j <= 2; j++) {
+			/*for (int j = -2; j <= 2; j++) {
 				XBarA += PointsA[CornersA->Corners[i].PointIndex+j].X;
 				YBarA += PointsA[CornersA->Corners[i].PointIndex+j].Y;
 				XBarB += PointsB[CornersB->Corners[Hypothesis->Hypothesis[i]-1].PointIndex+j].X;
 				YBarB += PointsB[CornersB->Corners[Hypothesis->Hypothesis[i]-1].PointIndex+j].Y;
 				NeighboursCount++;
-			}
+			}*/
 		}
 	}
 	TotalCount = Hypothesis->AssociationCount+NeighboursCount;
@@ -167,53 +169,15 @@ OdometryClass* ScanMatching(PointClass* PointsA,PointClass* PointsB,CornersHolde
 			float z = CornersA->Corners[i].Y-YBarA;
 			Numerator += w*y-z*x;
 			Denominator += w*x+z*y;
-			for (int j = -4; j <= 4; j++) {
+			/*for (int j = -4; j <= 4; j++) {
 				x = PointsB[CornersB->Corners[Hypothesis->Hypothesis[i]-1].PointIndex+j].X-XBarB;
 				y = PointsB[CornersB->Corners[Hypothesis->Hypothesis[i]-1].PointIndex+j].Y-YBarB;
 				w = PointsA[CornersA->Corners[i].PointIndex+j].X-XBarA;
 				z = PointsA[CornersA->Corners[i].PointIndex+j].Y-YBarA;
 				Numerator += w*y-z*x;
 				Denominator += w*x+z*y;
-			}
+			}*/
 		}
-	}
-	Result->Theta = atan2(Numerator,Denominator);
-
-	Result->X = XBarB-(XBarA*cos(Result->Theta)-YBarA*sin(Result->Theta));
-	Result->Y = YBarB-(XBarA*sin(Result->Theta)+YBarA*cos(Result->Theta));
-
-	Result->X += XBarB*cos(Result->Theta)+YBarB*sin(Result->Theta)-XBarA;
-	Result->Y += -XBarB*sin(Result->Theta)+YBarB*cos(Result->Theta)-YBarA;
-
-	Result->X /= 2;
-	Result->Y /= 2;
-
-	return Result;
-}
-
-OdometryClass* ScanMatching(PointClass* PointsA,PointClass* PointsB) {
-	OdometryClass* Result = new OdometryClass;
-	float XBarA = 0, YBarA = 0, XBarB = 0, YBarB = 0;
-	for (int i = 0; i < LIDARPOINTCOUNT; i++) {
-			XBarA += PointsA[i].X;
-			YBarA += PointsA[i].Y;
-			XBarB += PointsB[i].X;
-			YBarB += PointsB[i].Y;
-	}
-	XBarA /= LIDARPOINTCOUNT;
-	YBarA /= LIDARPOINTCOUNT;
-	XBarB /= LIDARPOINTCOUNT;
-	YBarB /= LIDARPOINTCOUNT;
-
-	float Numerator = 0, Denominator = 0;
-	for (int i = 0; i < LIDARPOINTCOUNT; i++) {
-		//Procrustes analysis, 2D rotation
-		float x = PointsB[i].X-XBarB;
-		float y = PointsB[i].Y-YBarB;
-		float w = PointsA[i].X-XBarA;
-		float z = PointsA[i].Y-YBarA;
-		Numerator += w*y-z*x;
-		Denominator += w*x+z*y;
 	}
 	Result->Theta = atan2(Numerator,Denominator);
 

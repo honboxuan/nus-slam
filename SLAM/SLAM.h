@@ -141,11 +141,7 @@ class IMU {
 
 //-------------------------------------------------------
 //--------------------DataAssociation--------------------
-
-/*--------------------DataAssociation Notes--------------------
-The data association algorithm can benefit from the use of more efficient neighbourhood search.
-*/
-
+//Note: The data association algorithm can benefit from the use of more efficient neighbourhood search.
 class HypothesisItem {
 	private:
 	public:
@@ -164,27 +160,15 @@ HypothesisItem* CornersAssociate(CornersHolderClass* CornersA,CornersHolderClass
 //--------------------ScanMatching--------------------
 //Procrustes analysis
 //Specific association for corners, does not consider the heading of the corner
-
-/*--------------------ScanMatching Notes--------------------
-The current algorithm involves feature extraction and data association of corners before simple 2D Procrustes analysis (least squares).
-The movement between scans causes the associated corners to be far between scans, which makes data association problematic. It is also 
-computationally expensive to use the JCBB algorithm in this situation (requires a relatively large individual compatibility threshold,
-resulting in a large number of possible hypothesis, especially if corners are crowded).
-
-If an external state estimator is present (IMU or otherwise), the performance of the scan matching algorithm can be significantly
-improved by transforming the consecutive scans onto an estimated global frame.
-*/
-
 class OdometryClass {
 	private:
 	public:
 		OdometryClass();
 		float X, Y, Theta;
 };
-float ScanMatchingCornersMahalanobis(CornerClass* A,CornerClass* B);
-HypothesisItem* ScanMatchingCornersAssociate(CornersHolderClass* CornersA,CornersHolderClass* CornersB,float Threshold);
+//float ScanMatchingCornersMahalanobis(CornerClass* A,CornerClass* B);
+//HypothesisItem* ScanMatchingCornersAssociate(CornersHolderClass* CornersA,CornersHolderClass* CornersB,float Threshold);
 OdometryClass* ScanMatching(PointClass* PointsA,PointClass* PointsB,CornersHolderClass* CornersA,CornersHolderClass* CornersB,HypothesisItem* Hypothesis);
-OdometryClass* ScanMatching(PointClass* PointsA,PointClass* PointsB);
 
 //-------------------------------------------------
 //--------------------Particles--------------------
