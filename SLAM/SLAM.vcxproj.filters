@@ -71,9 +71,6 @@
     <ClCompile Include="SLAM_MapElements.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Miscellaneous.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SLAM_History.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

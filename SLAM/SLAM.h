@@ -34,10 +34,6 @@
 #define FEATURESBLOCKSIZE 100
 
 //---------------------------------------------------
-//-------------------Miscellaneous-------------------
-int pow(int base,int exp);
-
-//---------------------------------------------------
 //--------------------MapElements--------------------
 class PointClass {
 	private:
@@ -122,6 +118,24 @@ class LIDAR {
 		PointClass* GetPoints();
 		float SinBearing[LIDARPOINTCOUNT];
 		float CosBearing[LIDARPOINTCOUNT];
+		void StepBack();
+};
+class IMUStateClass {
+	private:
+	public:
+		IMUStateClass();
+		float Roll, Pitch, Yaw;
+};
+class IMU {
+	private:
+		uint32_t FileLength, Index;
+		float** IMUBuffer;
+	public:
+		IMU();
+		~IMU();
+		bool Init();
+		float* GetValues();
+		IMUStateClass* GetIMUState();
 		void StepBack();
 };
 

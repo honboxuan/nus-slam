@@ -98,7 +98,6 @@
     <ClCompile Include="CApp_OnRender.cpp" />
     <ClCompile Include="CEvent.cpp" />
     <ClCompile Include="CSurface.cpp" />
-    <ClCompile Include="Miscellaneous.cpp" />
     <ClCompile Include="SLAM_History.cpp" />
     <ClCompile Include="SLAM_MapElements.cpp" />
     <ClCompile Include="SLAM_DataAssociation.cpp" />

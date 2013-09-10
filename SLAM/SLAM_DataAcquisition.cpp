@@ -16,8 +16,24 @@ LIDAR::~LIDAR() {
 	}
 	delete[] ScanBuffer;
 }
+IMUStateClass::IMUStateClass() {
+	Roll = 0;
+	Pitch = 0;
+	Yaw = 0;
+}
+IMU::IMU() {
+	IMUBuffer = NULL;
+	FileLength = 0;
+	Index = 0;
+}
+IMU::~IMU() {
+	for (uint32_t i = 0; i < FileLength/12; i++) {
+		delete[] IMUBuffer[i];
+	}
+	delete[] IMUBuffer;
+}
 bool LIDAR::Init() {
-	std::ifstream ScanSet ("output.bin",std::ifstream::binary);
+	std::ifstream ScanSet ("lidar.bin",std::ifstream::binary);
 	if (ScanSet.is_open()) {
 		ScanSet.seekg(0,ScanSet.end);
 		FileLength = uint32_t(ScanSet.tellg());
@@ -64,6 +80,46 @@ PointClass* LIDAR::GetPoints() {
 	}
 }
 void LIDAR::StepBack() {
+	//Only used to step in debugging
+	Index -= 2;
+}
+bool IMU::Init() {
+	std::ifstream ScanSet ("imu.bin",std::ifstream::binary);
+	if (ScanSet.is_open()) {
+		ScanSet.seekg(0,ScanSet.end);
+		FileLength = uint32_t(ScanSet.tellg());
+		ScanSet.seekg(0,ScanSet.beg);
+
+		IMUBuffer = new float*[FileLength/12];
+		for (uint32_t i = 0; i < FileLength/12; i++) {
+			IMUBuffer[i] = new float[3];
+			ScanSet.read((char*)IMUBuffer[i],12);
+		}
+		ScanSet.close();
+	} else {
+		return false;
+	}
+	return true;
+}
+float* IMU::GetValues() {
+	if (Index >= FileLength/12) {
+		return NULL;
+	}
+	return IMUBuffer[Index++];
+}
+IMUStateClass* IMU::GetIMUState() {
+	float* Values = GetValues();
+	if (Values != NULL) {
+		IMUStateClass* IMUState = new IMUStateClass;
+		IMUState->Roll = Values[0];
+		IMUState->Pitch = Values[1];
+		IMUState->Yaw = Values[2];
+		return IMUState;
+	} else {
+		return NULL;
+	}
+}
+void IMU::StepBack() {
 	//Only used to step in debugging
 	Index -= 2;
 }
