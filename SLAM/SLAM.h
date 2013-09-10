@@ -16,7 +16,7 @@
 #define LIDARPOINTCOUNT 1081
 #define LIDARANGULARRESOLUTION 0.25F
 #define LIDARSTARTANGLE -(LIDARANGULARRESOLUTION*(LIDARPOINTCOUNT-1)-180.0F)/2
-#define LIDARCLIPPINGRANGE 20000
+#define LIDARCLIPPINGRANGE 15000
 #define LIDARANGULARVARIANCE 0.01F //Degrees
 #define LIDARRANGEVARIANCE 0.001F //Coefficient
 
@@ -30,7 +30,7 @@
 
 //Particle allocation
 #define PARTICLEINITIALWEIGHT 1e200 //Using double
-#define PARTICLECOUNT 5000
+#define PARTICLECOUNT 1000
 #define FEATURESBLOCKSIZE 100
 
 //---------------------------------------------------
@@ -127,6 +127,11 @@ class LIDAR {
 
 //-------------------------------------------------------
 //--------------------DataAssociation--------------------
+
+/*--------------------DataAssociation Notes--------------------
+The data association algorithm can benefit from the use of more efficient neighbourhood search.
+*/
+
 class HypothesisItem {
 	private:
 	public:
@@ -152,8 +157,9 @@ The movement between scans causes the associated corners to be far between scans
 computationally expensive to use the JCBB algorithm in this situation (requires a relatively large individual compatibility threshold,
 resulting in a large number of possible hypothesis, especially if corners are crowded).
 
-ICP is an alternative algorithm that may not help. The implementation of efficient ICP requires KD trees, which will therefore require
-BOOST or other libraries.*/
+If an external state estimator is present (IMU or otherwise), the performance of the scan matching algorithm can be significantly
+improved by transforming the consecutive scans onto an estimated global frame.
+*/
 
 class OdometryClass {
 	private:
@@ -200,6 +206,7 @@ class HistoryClass {
 		HistoryClass();
 		~HistoryClass();
 		PointClass* Points;
+		LinesHolderClass* Lines;
 		CornersHolderClass* Corners;
 		OdometryClass* Odometry;
 };

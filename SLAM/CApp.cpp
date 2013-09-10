@@ -3,6 +3,7 @@
 CApp::CApp() {
 	Surf_Display = NULL;
 	Surf_Overlay = NULL;
+	Surf_Odometry = NULL;
 	Font = NULL;
 	FontColor.r = 255;
 	FontColor.g = 255;

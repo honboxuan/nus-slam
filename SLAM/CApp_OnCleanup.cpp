@@ -8,6 +8,7 @@ void CApp::OnCleanup() {
 
 	SDL_FreeSurface(Surf_Display);
 	SDL_FreeSurface(Surf_Overlay);
+	SDL_FreeSurface(Surf_Odometry);
 	TTF_CloseFont(Font);
 	TTF_Quit();
 	SDL_Quit();

@@ -28,7 +28,8 @@ void CApp::OnLoop() {
 				//Current point is zero, skip
 				IndexStart = i+1;
 			} else {
-				if (Points[i+1].Range == 0 || i == LIDARPOINTCOUNT-2/* || pow(Points[i].X-Points[i+1].X,2)+pow(Points[i].Y-Points[i+1].Y,2) > 40000*/) {
+				//if (Points[i+1].Range == 0 || i == LIDARPOINTCOUNT-2/* || pow(Points[i].X-Points[i+1].X,2)+pow(Points[i].Y-Points[i+1].Y,2) > 40000*/) {
+				if (Points[i+1].Range == 0 || i == LIDARPOINTCOUNT-2 || abs(Points[i].Range-Points[i+1].Range) > 200) {
 					//Next point is zero OR last point of scan OR big distance between two consecutive points
 					if (SplitMergeHead == NULL) {
 						SplitMergeHead = SplitMerge(Points,IndexStart,i,100);
@@ -64,7 +65,7 @@ void CApp::OnLoop() {
 		sprintf_s(str,"CornerCount:%d",CornersHolderLocal->Count);
 		CSurface::OnDraw(Surf_Display,TTF_RenderText_Blended(Font,str,FontColor),Surf_Display->w-270,Surf_Display->h-20);
 
-		/*
+		
 
 		//Draw split and merge points
 		SplitMergeItem* SplitMergeCurrent = SplitMergeHead;
@@ -117,9 +118,9 @@ void CApp::OnLoop() {
 			CSurface::DrawLine(Surf_Overlay,x,y,x2,y2,0,0,255);
 		}
 
-		*/
+		
 
-		/*
+		
 		//Drawing directly on display now
 		xMid = Surf_Display->w/2;
 		yMid = Surf_Display->h/2;
@@ -130,62 +131,131 @@ void CApp::OnLoop() {
 			int x = int(xMid + Zoom*Points[i].X);
 			int y = int(yMid - Zoom*Points[i].Y); //Window axes are different
 			CSurface::PutPixel(Surf_Display,x,y,255,255,255);
-		}*/
+		}
+
+
+
+
+		/*
+		Odometry angle estimation using lines:
+		Compare line thetas, if difference is greater than a small threshold, compare first and second.
+
+		Transform corners for data association.
+		*/
+
+		float AngleGuess = 0;
+		uint16_t AngleGuessCount = 0;
+		if (Previous.Lines != NULL) {
+			if (Previous.Lines->Count != 0) {
+				if (LinesHolderLocal->Count != 0) {
+
+					for (uint16_t i = 0; i < LinesHolderLocal->Count; i++) {
+						for (int8_t j = -2; j < 2; j++) {
+							if (i+j >= 0 && i+j < Previous.Lines->Count) {
+								if (Previous.Lines->Lines[i+j].Good && LinesHolderLocal->Lines[i].Good) {
+									if (abs(Previous.Lines->Lines[i+j].Length-LinesHolderLocal->Lines[i].Length) < 100) {
+										if (Previous.Lines->Lines[i+j].Length > 1000 && LinesHolderLocal->Lines[i].Length > 1000) {
+											float Difference = Previous.Lines->Lines[i+j].Theta-LinesHolderLocal->Lines[i].Theta;
+											if (abs(Difference) < DEG2RAD(20)) {
+												AngleGuess += Difference;
+												AngleGuessCount++;
+												break;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				AngleGuess /= AngleGuessCount;
+			}
+		}
+		//Draw points transformed with AngleGuess (blue)
+		for (uint16_t i = 0; i < LIDARPOINTCOUNT; i++) {
+
+			float drawX = Points[i].X;
+			float drawY = Points[i].Y;
+			drawX = drawX*cos(AngleGuess)-drawY*sin(AngleGuess);
+			drawY = drawX*sin(AngleGuess)+drawY*cos(AngleGuess);
+
+			int x = int(xMid + Zoom*drawX);
+			int y = int(yMid - Zoom*drawY);
+
+			CSurface::PutPixel(Surf_Odometry,x,y,0,0,255);
+		}
+
+		if (Previous.Points != NULL) {
+			//Draw unaltered previous points (red)
+			for (uint16_t i = 0; i < LIDARPOINTCOUNT; i++) {
+				int x = int(xMid + Zoom*Previous.Points[i].X);
+				int y = int(yMid - Zoom*Previous.Points[i].Y);
+				CSurface::PutPixel(Surf_Odometry,x,y,255,0,0);
+			}
+		}
 
 		//Data association and scan matching
-		/*HypothesisItem* HypothesisScanMatching = NULL;
+		HypothesisItem* HypothesisScanMatching = NULL;
 		OdometryClass* Odometry = NULL;
 		if (Previous.Corners != NULL) {
 			if (Previous.Corners->Count != 0) {
 				if (CornersHolderLocal->Count != 0) {
-					HypothesisScanMatching = ScanMatchingCornersAssociate(CornersHolderLocal,Previous.Corners,1000); //Order: Detected, Known, Threshold
-					/*if (HypothesisScanMatching->AssociationCount != 0) {
-						//Label associated corners with numbers for testing
+					HypothesisScanMatching = ScanMatchingCornersAssociate(CornersHolderLocal,Previous.Corners,300); //Order: Detected, Known, Threshold
+					if (HypothesisScanMatching->AssociationCount != 0) {
+						//Label associated corners
 						for (int i = 0; i < CornersHolderLocal->Count; i++) {
 							if (HypothesisScanMatching->Hypothesis[i] != 0) {
 								int x = int(xMid + Zoom*CornersHolderLocal->Corners[i].X);
 								int y = int(yMid - Zoom*CornersHolderLocal->Corners[i].Y);
 								for (int k = -3; k <= 3; k++) {
 									for (int j = -3; j <= 3; j++) {
-										CSurface::PutPixel(Surf_Display,x+j,y+k,0,0,255);
+										CSurface::PutPixel(Surf_Odometry,x+j,y+k,0,0,255);
 									}
 								}
 								//Show neighbourhood points
-								for (int j = -4; j <= 4; j++) {
+								/*for (int j = -4; j <= 4; j++) {
 									x = int(xMid + Zoom*Points[CornersHolderLocal->Corners[i].PointIndex+j].X);
 									y = int(yMid - Zoom*Points[CornersHolderLocal->Corners[i].PointIndex+j].Y); //Window axes are different
-									CSurface::PutPixel(Surf_Display,x,y,255,0,255);
-								}
+									CSurface::PutPixel(Surf_Odometry,x,y,255,0,255);
+								}*/
 								x = int(xMid + Zoom*Previous.Corners->Corners[HypothesisScanMatching->Hypothesis[i]-1].X);
 								y = int(yMid - Zoom*Previous.Corners->Corners[HypothesisScanMatching->Hypothesis[i]-1].Y);
 								for (int k = -3; k <= 3; k++) {
 									for (int j = -3; j <= 3; j++) {
-										CSurface::PutPixel(Surf_Display,x+j,y+k,0,255,255);
+										CSurface::PutPixel(Surf_Odometry,x+j,y+k,0,255,255);
 									}
 								}
 								//Show neighbourhood points
-								for (int j = -4; j <= 4; j++) {
+								/*for (int j = -4; j <= 4; j++) {
 									x = int(xMid + Zoom*Previous.Points[Previous.Corners->Corners[HypothesisScanMatching->Hypothesis[i]-1].PointIndex+j].X);
 									y = int(yMid - Zoom*Previous.Points[Previous.Corners->Corners[HypothesisScanMatching->Hypothesis[i]-1].PointIndex+j].Y); //Window axes are different
-									CSurface::PutPixel(Surf_Display,x,y,255,255,0);
-								}
+									CSurface::PutPixel(Surf_Odometry,x,y,255,255,0);
+								}*/
 							}
 						}
-					} Comment normally ends here
+					}
 					sprintf_s(str,"AssocCount:%d",HypothesisScanMatching->AssociationCount);
 					CSurface::OnDraw(Surf_Display,TTF_RenderText_Blended(Font,str,FontColor),Surf_Display->w-410,Surf_Display->h-20);
-					if (HypothesisScanMatching->AssociationCount > 3) {
+					if (HypothesisScanMatching->AssociationCount > 2) {
 						Odometry = ScanMatching(Points,Previous.Points,CornersHolderLocal,Previous.Corners,HypothesisScanMatching);
 					} else {
-						Odometry = Previous.Odometry;
+						//Odometry = Previous.Odometry;
 					}
 				} else {
 					//No corners detected
 				}
 			}
 		}
-		delete HypothesisScanMatching;*/
+		delete HypothesisScanMatching;
 		
+
+
+
+
+
+
+
+
 		/*---------------Works perfectly if simulated----------------
 		PointClass TestPoints[LIDARPOINTCOUNT];
 		float angle = DEG2RAD(1);
@@ -205,15 +275,15 @@ void CApp::OnLoop() {
 
 		//-----------------Does not work in real life---------------
 		//Yellow should overlap with red
-		OdometryClass* Odometry = NULL;
-		if (Previous.Points != NULL) {
-			Odometry = ScanMatching(Points,Previous.Points); //Transformation from A to B
-
+		//OdometryClass* Odometry = NULL;
+		/*if (Previous.Points != NULL) {
+			/Odometry = ScanMatching(Points,Previous.Points); //Transformation from A to B*/
+		if (Odometry != NULL) {
 			float angle = RAD2DEG(Odometry->Theta);
 			sprintf_s(str,"dTheta:%.3f",angle);
-			CSurface::OnDraw(Surf_Display,TTF_RenderText_Blended(Font,str,FontColor),Surf_Display->w-420,Surf_Display->h-20);
+			CSurface::OnDraw(Surf_Display,TTF_RenderText_Blended(Font,str,FontColor),Surf_Display->w-550,Surf_Display->h-20);
 
-
+			/*
 			//Show centroids
 			float XBarA = 0, YBarA = 0, XBarB = 0, YBarB = 0;
 			for (int i = 0; i < LIDARPOINTCOUNT; i++) {
@@ -228,19 +298,12 @@ void CApp::OnLoop() {
 			YBarB /= LIDARPOINTCOUNT;
 			for (int k = -3; k <= 3; k++) {
 				for (int j = -3; j <= 3; j++) {
-					CSurface::PutPixel(Surf_Display,xMid+j+Zoom*XBarA,yMid+k-Zoom*YBarA,255,255,255);
-					CSurface::PutPixel(Surf_Display,xMid+j+Zoom*XBarB,yMid+k-Zoom*YBarB,255,0,0);
+					CSurface::PutPixel(Surf_Odometry,int(xMid+j+Zoom*XBarA),int(yMid+k-Zoom*YBarA),255,255,255);
+					CSurface::PutPixel(Surf_Odometry,int(xMid+j+Zoom*XBarB),int(yMid+k-Zoom*YBarB),255,0,0);
 				}
 			}
+			*/
 
-
-
-			//Draw unaltered previous points (red)
-			for (uint16_t i = 0; i < LIDARPOINTCOUNT; i++) {
-				int x = int(xMid + Zoom*Previous.Points[i].X);
-				int y = int(yMid - Zoom*Previous.Points[i].Y);
-				CSurface::PutPixel(Surf_Display,x,y,255,0,0);
-			}
 
 			//Draw transformed points (yellow)
 			for (uint16_t i = 0; i < LIDARPOINTCOUNT; i++) {
@@ -259,7 +322,7 @@ void CApp::OnLoop() {
 
 				//int x = int(xMid + Zoom*(Points[i].X*cos(DEG2RAD(45))-Points[i].Y*sin(DEG2RAD(45))));
 				//int y = int(yMid - Zoom*(Points[i].X*sin(DEG2RAD(45))+Points[i].Y*cos(DEG2RAD(45))));
-				CSurface::PutPixel(Surf_Display,x,y,255,255,0);
+				CSurface::PutPixel(Surf_Odometry,x,y,255,255,0);
 			}
 		}
 
@@ -274,7 +337,7 @@ void CApp::OnLoop() {
 			if (CornersHolderLocal->Count != 0) {
 				CornersHolderGlobal = Particles[i]->Loc2Glo(CornersHolderLocal);
 				if (Particles[i]->CornersHolder->Count != 0) {
-					Hypothesis = CornersAssociate(CornersHolderGlobal,Particles[i]->CornersHolder,1000);
+					Hypothesis = CornersAssociate(CornersHolderGlobal,Particles[i]->CornersHolder,100); //Watch the threshold
 					if (Hypothesis->AssociationCount != 0) {
 						for (uint16_t j = 0; j < CornersHolderGlobal->Count; j++) {
 							if (Hypothesis->Hypothesis[j] != 0) {
@@ -401,6 +464,10 @@ void CApp::OnLoop() {
 		}
 		Previous.Odometry = Odometry;
 
+		if (Previous.Lines != NULL) {
+			delete Previous.Lines;
+		}
+		Previous.Lines = LinesHolderLocal;
 		if (Previous.Corners != NULL) {
 			delete Previous.Corners;
 		}
@@ -412,7 +479,6 @@ void CApp::OnLoop() {
 
 		//Deallocate
 		LinkedListDeallocate(SplitMergeHead);
-		delete LinesHolderLocal;
 	}
 
 	Time = SDL_GetTicks()-Time;
