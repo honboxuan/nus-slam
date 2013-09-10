@@ -6,8 +6,9 @@ void CApp::OnLoop() {
 
 	float Zoom = 0.45F*float(Surf_Overlay->w)/LIDARCLIPPINGRANGE;
 
-	PointClass* Points;
-	if ((Points = UTM30.GetPoints()) != NULL) {
+	PointClass* Points = NULL;
+	IMUStateClass* IMUState = NULL;
+	if ((Points = UTM30.GetPoints()) != NULL && (IMUState = sbgIMU.GetIMUState()) != NULL) {
 		//Draw raw points
 		int xMid = Surf_Overlay->w/2;
 		int yMid = Surf_Overlay->h/2;
@@ -132,57 +133,20 @@ void CApp::OnLoop() {
 			int y = int(yMid - Zoom*Points[i].Y); //Window axes are different
 			CSurface::PutPixel(Surf_Display,x,y,255,255,255);
 		}
+		if ((IMUState != NULL) && (Previous.IMUState != NULL)) {
+			//Draw points transformed with IMU yaw value (blue)
+			for (uint16_t i = 0; i < LIDARPOINTCOUNT; i++) {
 
+				float drawX = Points[i].X;
+				float drawY = Points[i].Y;
+				drawX = drawX*cos(Previous.IMUState->Yaw-IMUState->Yaw)-drawY*sin(Previous.IMUState->Yaw-IMUState->Yaw);
+				drawY = drawX*sin(Previous.IMUState->Yaw-IMUState->Yaw)+drawY*cos(Previous.IMUState->Yaw-IMUState->Yaw);
 
+				int x = int(xMid + Zoom*drawX);
+				int y = int(yMid - Zoom*drawY);
 
-
-		/*
-		Odometry angle estimation using lines:
-		Compare line thetas, if difference is greater than a small threshold, compare first and second.
-
-		Transform corners for data association.
-		*/
-
-		float AngleGuess = 0;
-		uint16_t AngleGuessCount = 0;
-		if (Previous.Lines != NULL) {
-			if (Previous.Lines->Count != 0) {
-				if (LinesHolderLocal->Count != 0) {
-
-					for (uint16_t i = 0; i < LinesHolderLocal->Count; i++) {
-						for (int8_t j = -2; j < 2; j++) {
-							if (i+j >= 0 && i+j < Previous.Lines->Count) {
-								if (Previous.Lines->Lines[i+j].Good && LinesHolderLocal->Lines[i].Good) {
-									if (abs(Previous.Lines->Lines[i+j].Length-LinesHolderLocal->Lines[i].Length) < 100) {
-										if (Previous.Lines->Lines[i+j].Length > 1000 && LinesHolderLocal->Lines[i].Length > 1000) {
-											float Difference = Previous.Lines->Lines[i+j].Theta-LinesHolderLocal->Lines[i].Theta;
-											if (abs(Difference) < DEG2RAD(20)) {
-												AngleGuess += Difference;
-												AngleGuessCount++;
-												break;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-				AngleGuess /= AngleGuessCount;
+				CSurface::PutPixel(Surf_Odometry,x,y,0,0,255);
 			}
-		}
-		//Draw points transformed with AngleGuess (blue)
-		for (uint16_t i = 0; i < LIDARPOINTCOUNT; i++) {
-
-			float drawX = Points[i].X;
-			float drawY = Points[i].Y;
-			drawX = drawX*cos(AngleGuess)-drawY*sin(AngleGuess);
-			drawY = drawX*sin(AngleGuess)+drawY*cos(AngleGuess);
-
-			int x = int(xMid + Zoom*drawX);
-			int y = int(yMid - Zoom*drawY);
-
-			CSurface::PutPixel(Surf_Odometry,x,y,0,0,255);
 		}
 
 		if (Previous.Points != NULL) {
@@ -306,6 +270,7 @@ void CApp::OnLoop() {
 
 
 			//Draw transformed points (yellow)
+			/*
 			for (uint16_t i = 0; i < LIDARPOINTCOUNT; i++) {
 
 				float drawX = Points[i].X;
@@ -324,6 +289,7 @@ void CApp::OnLoop() {
 				//int y = int(yMid - Zoom*(Points[i].X*sin(DEG2RAD(45))+Points[i].Y*cos(DEG2RAD(45))));
 				CSurface::PutPixel(Surf_Odometry,x,y,255,255,0);
 			}
+			*/
 		}
 
 
@@ -472,6 +438,10 @@ void CApp::OnLoop() {
 			delete Previous.Corners;
 		}
 		Previous.Corners = CornersHolderLocal;
+		if (Previous.IMUState != NULL) {
+			delete Previous.IMUState;
+		}
+		Previous.IMUState = IMUState;
 		if (Previous.Points != NULL) {
 			delete Previous.Points;
 		}

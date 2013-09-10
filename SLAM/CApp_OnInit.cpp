@@ -24,6 +24,8 @@ bool CApp::OnInit() {
 	if (UTM30.Init() != true) {
 		return false;
 	}
-
+	if (sbgIMU.Init() != true) {
+		return false;
+	}
 	return true;
 }
