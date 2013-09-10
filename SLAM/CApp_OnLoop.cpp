@@ -308,7 +308,7 @@ void CApp::OnLoop() {
 			if (CornersHolderLocal->Count != 0) {
 				CornersHolderGlobal = Particles[i]->Loc2Glo(CornersHolderLocal);
 				if (Particles[i]->CornersHolder->Count != 0) {
-					Hypothesis = CornersAssociate(CornersHolderGlobal,Particles[i]->CornersHolder,100); //Watch the threshold
+					Hypothesis = CornersAssociate(CornersHolderGlobal,Particles[i]->CornersHolder,400); //Watch the threshold
 					if (Hypothesis->AssociationCount != 0) {
 						for (uint16_t j = 0; j < CornersHolderGlobal->Count; j++) {
 							if (Hypothesis->Hypothesis[j] != 0) {

@@ -291,11 +291,12 @@ CornersHolderClass* CornerExtraction(LinesHolderClass* LinesHolder) {
 			CornersHolder->Corners[i].Covariance(3,3) = 0;*/
 
 
-			/*CornersHolder->Corners[i].Covariance = Eigen::Matrix4f::Identity();
+			CornersHolder->Corners[i].Covariance = Eigen::Matrix4f::Identity();
 			CornersHolder->Corners[i].Covariance(2,2) = 0.001F;
-			CornersHolder->Corners[i].Covariance(3,3) = 0.000001F;*/
+			CornersHolder->Corners[i].Covariance(3,3) = 0.0001F;
 
 			//Covariance matrix guesstimation (dropping square roots, assume uncorrelated)
+			/*
 			float SinTheta = sin(LinesHolder->Lines[Current->Index].Theta);
 			float CosTheta = cos(LinesHolder->Lines[Current->Index].Theta);
 			float SinTheta2 = sin(LinesHolder->Lines[Current->Index+1].Theta);
@@ -323,7 +324,7 @@ CornersHolderClass* CornerExtraction(LinesHolderClass* LinesHolder) {
 			CornersHolder->Corners[i].Covariance(2,2) = LinesHolder->Lines[Current->Index].Covariance(1,1)+LinesHolder->Lines[Current->Index+1].Covariance(1,1);
 			CornersHolder->Corners[i].Covariance(3,3) = 0.5F*(LinesHolder->Lines[Current->Index].Covariance(1,1)+LinesHolder->Lines[Current->Index+1].Covariance(1,1));
 			CornersHolder->Corners[i].Covariance *= 1e3F;
-
+			*/
 
 
 

@@ -122,7 +122,7 @@ double KalmanUpdate(CornerClass* Known,CornerClass* Detected) {
 	
 	
 	//Features are not exactly static considering the poor data
-	//Known->Covariance = (Eigen::Matrix4f::Identity()-K)*Known->Covariance; 
+	Known->Covariance = (Eigen::Matrix4f::Identity()-K)*Known->Covariance; 
 
 	
 	
