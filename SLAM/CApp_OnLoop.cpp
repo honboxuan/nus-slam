@@ -67,7 +67,8 @@ void CApp::OnLoop() {
 		CSurface::OnDraw(Surf_Display,TTF_RenderText_Blended(Font,str,FontColor),Surf_Display->w-270,Surf_Display->h-20);
 
 		
-		/*
+		//----------------------------------------------------------------------
+		//------------------------Just for visualisation------------------------
 		//Draw split and merge points
 		SplitMergeItem* SplitMergeCurrent = SplitMergeHead;
 		for (int i = 0; i < LinesHolderLocal->Count; i++) {
@@ -118,33 +119,34 @@ void CApp::OnLoop() {
 			int y2 = y-int(length*sin(CornersHolderLocal->Corners[i].Heading));
 			CSurface::DrawLine(Surf_Overlay,x,y,x2,y2,0,0,255);
 		}
-		*/
-		
+		//------------------------Just for visualisation------------------------
+		//----------------------------------------------------------------------
 
 		
 		//-----------------------------------------------------------------------------------------------------------------------
 		//-----------------------------------------------------SCAN MATCHING-----------------------------------------------------
 		HypothesisItem* HypothesisScanMatching = NULL;
 		OdometryClass* Odometry = NULL;
-		if (Previous.Corners != NULL) {
+		if (Previous.Corners != NULL && Previous.IMUState != NULL) {
 			if (Previous.Corners->Count != 0) {
 				if (CornersHolderLocal->Count != 0) {
-					
-
-					//Create CornersHolderIntermediate and rotate CornersHolderLocal to CornersHolderIntermediate
-					//Do data association with CornersHolderIntermediate
-					//Deallocate CornersHolderIntermediate
 					CornersHolderClass* CornersHolderIntermediate = new CornersHolderClass;
 					CornersHolderIntermediate->Count = CornersHolderLocal->Count;
 					CornersHolderIntermediate->Corners = new CornerClass[CornersHolderLocal->Count];
-					float Theta = Previous.IMUState->Yaw-IMUState->Yaw;
-					float Sin_Theta = sin(Theta);
-					float Cos_Theta = cos(Theta);
+					float IMUTheta = Previous.IMUState->Yaw-IMUState->Yaw;
+					if (IMUTheta > PI) {
+						IMUTheta -= 2*PI;
+					}
+					if (IMUTheta < -PI) {
+						IMUTheta += 2*PI;
+					}
+					float Sin_Theta = sin(IMUTheta);
+					float Cos_Theta = cos(IMUTheta);
 					for (uint16_t i = 0; i < CornersHolderIntermediate->Count; i++) {
 						CornersHolderIntermediate->Corners[i].X = CornersHolderLocal->Corners[i].X*Cos_Theta-CornersHolderLocal->Corners[i].Y*Sin_Theta;
 						CornersHolderIntermediate->Corners[i].Y = CornersHolderLocal->Corners[i].X*Sin_Theta+CornersHolderLocal->Corners[i].Y*Cos_Theta;
 						CornersHolderIntermediate->Corners[i].Angle = CornersHolderLocal->Corners[i].Angle;
-						CornersHolderIntermediate->Corners[i].Heading = CornersHolderLocal->Corners[i].Heading+Theta;
+						CornersHolderIntermediate->Corners[i].Heading = CornersHolderLocal->Corners[i].Heading+IMUTheta;
 						if (CornersHolderIntermediate->Corners[i].Heading > PI) {
 							CornersHolderIntermediate->Corners[i].Heading -= 2*PI;
 						}
@@ -154,8 +156,6 @@ void CApp::OnLoop() {
 						CornersHolderIntermediate->Corners[i].Covariance = CornersHolderLocal->Corners[i].Covariance;
 					}
 					HypothesisScanMatching = CornersAssociate(CornersHolderIntermediate,Previous.Corners,200); //Order: Detected, Known, Threshold
-					delete CornersHolderIntermediate;
-
 
 					//----------------------------------------------------------------------
 					//------------------------Just for visualisation------------------------
@@ -188,18 +188,29 @@ void CApp::OnLoop() {
 					//----------------------------------------------------------------------
 
 					if (HypothesisScanMatching->AssociationCount > 2) {
-						Odometry = ScanMatching(Points,Previous.Points,CornersHolderLocal,Previous.Corners,HypothesisScanMatching);
+						//Odometry = ScanMatching(Points,Previous.Points,CornersHolderLocal,Previous.Corners,HypothesisScanMatching);
+						Odometry = FindTranslation(Points,Previous.Points,CornersHolderIntermediate,Previous.Corners,HypothesisScanMatching);
+						Odometry->Theta = IMUTheta;
 					} else {
+						//Insufficient associations for odometry
 						if (Previous.Odometry != NULL) {
 							Odometry = Previous.Odometry;
-							Odometry->Theta = Previous.IMUState->Yaw-IMUState->Yaw;
+							Odometry->Theta = IMUTheta;
 						}
 					}
+					delete CornersHolderIntermediate;
 				} else {
 					//No corners detected
 					if (Previous.Odometry != NULL) {
 						Odometry = Previous.Odometry;
-						Odometry->Theta = Previous.IMUState->Yaw-IMUState->Yaw;
+						float IMUTheta = Previous.IMUState->Yaw-IMUState->Yaw;
+						if (IMUTheta > PI) {
+							IMUTheta -= 2*PI;
+						}
+						if (IMUTheta < -PI) {
+							IMUTheta += 2*PI;
+						}
+						Odometry->Theta = IMUTheta;
 					}
 				}
 			}
@@ -212,11 +223,31 @@ void CApp::OnLoop() {
 		//----------------------------------------------------------------------------------
 		//-------------------------------Testing ScanMatching-------------------------------
 		/*
-		//Drawing directly on display
-		xMid = Surf_Display->w/2;
-		yMid = Surf_Display->h/2;
-		Zoom = 0.45F*float(Surf_Display->w)/LIDARCLIPPINGRANGE;
+		//Drawing on Surf_Odometry
+		xMid = Surf_Odometry->w/2;
+		yMid = Surf_Odometry->h/2;
+		Zoom = 0.45F*float(Surf_Odometry->w)/LIDARCLIPPINGRANGE;
 
+		if (Odometry != NULL) {
+			float IMUTheta = Previous.IMUState->Yaw-IMUState->Yaw;
+			if (IMUTheta > PI) {
+				IMUTheta -= 2*PI;
+			}
+			if (IMUTheta < -PI) {
+				IMUTheta += 2*PI;
+			}
+			sprintf_s(str,"Diff:%.1f",RAD2DEG(IMUTheta));
+			CSurface::OnDraw(Surf_Display,TTF_RenderText_Blended(Font,str,FontColor),Surf_Display->w-410,Surf_Display->h-20);
+		}
+
+		Particles[0]->StateUpdate(Odometry);
+		int x = int(xMid + Zoom*Particles[0]->X);
+		int y = int(yMid - Zoom*Particles[0]->Y);
+		for (int k = -1; k <= 1; k++) {
+			for (int j = -1; j <= 1; j++) {
+				CSurface::PutPixel(Surf_Odometry,x+j,y+k,255,0,0);
+			}
+		}
 		//Draw current points
 		for (uint16_t i = 0; i < LIDARPOINTCOUNT; i++) {
 			int x = int(xMid + Zoom*Points[i].X);
@@ -231,18 +262,16 @@ void CApp::OnLoop() {
 				CSurface::PutPixel(Surf_Odometry,x,y,255,0,0);
 			}
 		}
-		//Draw points transformed with IMU yaw value (blue)
-		if ((IMUState != NULL) && (Previous.IMUState != NULL)) {
+		//Draw points transformed with IMU yaw value (green)
+		if (Previous.IMUState != NULL) {
 			for (uint16_t i = 0; i < LIDARPOINTCOUNT; i++) {
 				float drawX = Points[i].X;
 				float drawY = Points[i].Y;
 				drawX = drawX*cos(Previous.IMUState->Yaw-IMUState->Yaw)-drawY*sin(Previous.IMUState->Yaw-IMUState->Yaw);
 				drawY = drawX*sin(Previous.IMUState->Yaw-IMUState->Yaw)+drawY*cos(Previous.IMUState->Yaw-IMUState->Yaw);
-
 				int x = int(xMid + Zoom*drawX);
 				int y = int(yMid - Zoom*drawY);
-
-				CSurface::PutPixel(Surf_Odometry,x,y,0,0,255);
+				CSurface::PutPixel(Surf_Odometry,x,y,0,255,0);
 			}
 		}
 		//Draw transformed points (yellow)
@@ -265,8 +294,11 @@ void CApp::OnLoop() {
 
 
 
+		
 
-		/*
+
+		//-----------------------------------------------------------------------------
+		//-------------------------------Particle Filter-------------------------------
 		//Particle filter
 		bool Resample = false;
 		for (uint16_t i = 0; i < PARTICLECOUNT; i++) {
@@ -315,18 +347,12 @@ void CApp::OnLoop() {
 		if (Resample) {
 			Particles = ParticleResample(Particles);
 		}
+		//-------------------------------Particle Filter-------------------------------
+		//-----------------------------------------------------------------------------
 
 
-
-
-
-
-
-
-
-
-
-
+		//----------------------------------------------------------------------------------
+		//---------------------------------Visualising SLAM---------------------------------
 
 		//Drawing on display
 		xMid = Surf_Display->w/2;
@@ -385,9 +411,11 @@ void CApp::OnLoop() {
 		int x2 = x+int(length*cos(Particles[Chosen]->Theta+PI/2));
 		int y2 = y-int(length*sin(Particles[Chosen]->Theta+PI/2));
 		CSurface::DrawLine(Surf_Display,x,y,x2,y2,255,0,0);	
-		*/
 		
+		//---------------------------------Visualising SLAM---------------------------------
+		//----------------------------------------------------------------------------------
 
+		
 
 
 

@@ -9,10 +9,10 @@ bool CApp::OnInit() {
 		return false;
 	}
 	SDL_WM_SetCaption("SLAM",0);
-	if ((Surf_Overlay = SDL_CreateRGBSurface(SDL_HWSURFACE,Surf_Display->w,Surf_Display->h,32,0,0,0,0)) == NULL) {
+	if ((Surf_Overlay = SDL_CreateRGBSurface(SDL_HWSURFACE,Surf_Display->w/2,Surf_Display->h,32,0,0,0,0)) == NULL) {
 		return false;
 	}
-	if ((Surf_Odometry = SDL_CreateRGBSurface(SDL_HWSURFACE,Surf_Display->w,Surf_Display->h,32,0,0,0,0)) == NULL) {
+	if ((Surf_Odometry = SDL_CreateRGBSurface(SDL_HWSURFACE,Surf_Display->w/2,Surf_Display->h,32,0,0,0,0)) == NULL) {
 		return false;
 	}
 	if (TTF_Init() < 0) {

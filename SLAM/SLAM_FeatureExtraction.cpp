@@ -232,7 +232,7 @@ CornersHolderClass* CornerExtraction(LinesHolderClass* LinesHolder) {
 					if (Angle > PI) {
 						Angle -= PI;
 					}
-					if (Angle > DEG2RAD(20) && Angle < DEG2RAD(160)) {
+					if (Angle > DEG2RAD(45) && Angle < DEG2RAD(135)) {
 						if (Head == NULL) {
 							Head = new CornerItem;
 							Head->Index = i;

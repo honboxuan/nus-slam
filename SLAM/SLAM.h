@@ -24,13 +24,13 @@
 /*#define LIDARPOINTCOUNT 181
 #define LIDARANGULARRESOLUTION 1.0F
 #define LIDARSTARTANGLE -(LIDARANGULARRESOLUTION*(LIDARPOINTCOUNT-1)-180.0F)/2
-#define LIDARCLIPPINGRANGE 10000
+#define LIDARCLIPPINGRANGE 50000
 #define LIDARANGULARVARIANCE 0.01F //Degrees
 #define LIDARRANGEVARIANCE 0.001F //Coefficient*/
 
 //Particle allocation
 #define PARTICLEINITIALWEIGHT 1e200 //Using double
-#define PARTICLECOUNT 1000
+#define PARTICLECOUNT 500
 #define FEATURESBLOCKSIZE 100
 
 //---------------------------------------------------
@@ -169,6 +169,7 @@ class OdometryClass {
 //float ScanMatchingCornersMahalanobis(CornerClass* A,CornerClass* B);
 //HypothesisItem* ScanMatchingCornersAssociate(CornersHolderClass* CornersA,CornersHolderClass* CornersB,float Threshold);
 OdometryClass* ScanMatching(PointClass* PointsA,PointClass* PointsB,CornersHolderClass* CornersA,CornersHolderClass* CornersB,HypothesisItem* Hypothesis);
+OdometryClass* FindTranslation(PointClass* PointsA,PointClass* PointsB,CornersHolderClass* CornersA,CornersHolderClass* CornersB,HypothesisItem* Hypothesis);
 
 //-------------------------------------------------
 //--------------------Particles--------------------

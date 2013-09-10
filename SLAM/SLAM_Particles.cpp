@@ -18,13 +18,14 @@ bool ParticleClass::StateUpdate(OdometryClass* Odometry) {
 		//Noise
 		std::random_device RD;
 		std::default_random_engine Eng(RD());
-		std::normal_distribution<float> TranslationDistribution(0.0F,2.0F);
-		std::normal_distribution<float> RotationDistribution(0.0F,2.0F);
+		std::normal_distribution<float> TranslationDistribution(0.0F,1.0F);
+		std::normal_distribution<float> RotationDistribution(0.0F,1.0F);
 
 		float NoiseX = Odometry->X*TranslationDistribution(Eng);
 		float NoiseY = Odometry->Y*TranslationDistribution(Eng);
 		float NoiseTheta = Odometry->Theta*RotationDistribution(Eng);
 
+		/*
 		//Rotate odometry values, translate half
 		X += float(0.5*((NoiseX+Odometry->X)*cos(Theta)-(NoiseY+Odometry->Y)*sin(Theta)));
 		Y += float(0.5*((NoiseX+Odometry->X)*sin(Theta)+(NoiseY+Odometry->Y)*cos(Theta)));
@@ -40,6 +41,19 @@ bool ParticleClass::StateUpdate(OdometryClass* Odometry) {
 		//Complete translation
 		X += float(0.5*((NoiseX+Odometry->X)*cos(Theta)-(NoiseY+Odometry->Y)*sin(Theta)));
 		Y += float(0.5*((NoiseX+Odometry->X)*sin(Theta)+(NoiseY+Odometry->Y)*cos(Theta)));
+		*/
+
+		//Rotation before translation
+		X += float((NoiseX+Odometry->X)*cos(Theta)-(NoiseY+Odometry->Y)*sin(Theta));
+		Y += float((NoiseX+Odometry->X)*sin(Theta)+(NoiseY+Odometry->Y)*cos(Theta));
+		Theta += Odometry->Theta;
+		Theta += NoiseTheta;
+		if (Theta > PI) {
+			Theta -= 2*PI;
+		}
+		if (Theta < -PI) {
+			Theta += 2*PI;
+		}
 	} else {
 		return false;
 	}

@@ -192,3 +192,25 @@ OdometryClass* ScanMatching(PointClass* PointsA,PointClass* PointsB,CornersHolde
 
 	return Result;
 }
+
+OdometryClass* FindTranslation(PointClass* PointsA,PointClass* PointsB,CornersHolderClass* CornersA,CornersHolderClass* CornersB,HypothesisItem* Hypothesis) {
+	OdometryClass* Result = new OdometryClass;
+	float XBarA = 0, YBarA = 0, XBarB = 0, YBarB = 0;
+	for (int i = 0; i < CornersA->Count; i++) {
+		if (Hypothesis->Hypothesis[i] != 0) {
+			XBarA += CornersA->Corners[i].X;
+			YBarA += CornersA->Corners[i].Y;
+			XBarB += CornersB->Corners[Hypothesis->Hypothesis[i]-1].X;
+			YBarB += CornersB->Corners[Hypothesis->Hypothesis[i]-1].Y;
+		}
+	}
+	XBarA /= Hypothesis->AssociationCount;
+	YBarA /= Hypothesis->AssociationCount;
+	XBarB /= Hypothesis->AssociationCount;
+	YBarB /= Hypothesis->AssociationCount;
+
+	Result->X = XBarB-XBarA;
+	Result->Y = YBarB-YBarA;
+
+	return Result;
+}
