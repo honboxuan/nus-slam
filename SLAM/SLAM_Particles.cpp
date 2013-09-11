@@ -18,7 +18,7 @@ bool ParticleClass::StateUpdate(OdometryClass* Odometry) {
 		//Noise
 		std::random_device RD;
 		std::default_random_engine Eng(RD());
-		std::normal_distribution<float> TranslationDistribution(0.0F,1.0F);
+		std::normal_distribution<float> TranslationDistribution(0.0F,2.5F);
 		std::normal_distribution<float> RotationDistribution(0.0F,1.0F);
 
 		float NoiseX = Odometry->X*TranslationDistribution(Eng);
@@ -122,9 +122,9 @@ double KalmanUpdate(CornerClass* Known,CornerClass* Detected) {
 	
 	
 	//Features are not exactly static considering the poor data
-	Known->Covariance = (Eigen::Matrix4f::Identity()-K)*Known->Covariance; 
-
-	
+	//Known->Covariance = (Eigen::Matrix4f::Identity()-K)*Known->Covariance; 
+	Known->Covariance.block<2,2>(2,2) = ((Eigen::Matrix4f::Identity()-K)*Known->Covariance).block<2,2>(2,2);
+	//Known->Covariance(3,3) = ((Eigen::Matrix4f::Identity()-K)*Known->Covariance)(3,3);
 	
 	//Importance weight
 	//return pow((2*PI*Q).determinant(),-0.5F)*exp(-0.5F*Innovation.transpose()*Q.inverse()*Innovation);
@@ -158,7 +158,7 @@ ParticleClass** ParticleResample(ParticleClass** Particles) {
 
 		//---------Tournament Selection with Replacement---------
 		uint16_t Index = Distribution(Eng);
-		for (uint8_t j = 0; j < 10; j++) {
+		for (uint8_t j = 0; j < 3; j++) {
 			uint16_t Compare = Distribution(Eng);
 			if (Particles[Index]->Weight < Particles[Compare]->Weight) {
 				Index = Compare;

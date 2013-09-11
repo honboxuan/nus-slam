@@ -30,7 +30,7 @@
 
 //Particle allocation
 #define PARTICLEINITIALWEIGHT 1e200 //Using double
-#define PARTICLECOUNT 500
+#define PARTICLECOUNT 1000
 #define FEATURESBLOCKSIZE 100
 
 //---------------------------------------------------
@@ -181,6 +181,8 @@ class ParticleClass {
 		~ParticleClass();
 		bool StateUpdate(OdometryClass* Odometry);
 		
+		//Needs map management method(s)
+
 		float X, Y, Theta;
 		double Weight;
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW

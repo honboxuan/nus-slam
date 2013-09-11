@@ -1,5 +1,7 @@
 #include "CApp.h"
 
+#define DEMO 0
+
 void CApp::OnLoop() {
 	//SDL_Delay(20);
 	uint32_t Time = SDL_GetTicks();
@@ -29,8 +31,9 @@ void CApp::OnLoop() {
 				//Current point is zero, skip
 				IndexStart = i+1;
 			} else {
-				//if (Points[i+1].Range == 0 || i == LIDARPOINTCOUNT-2/* || pow(Points[i].X-Points[i+1].X,2)+pow(Points[i].Y-Points[i+1].Y,2) > 40000*/) {
-				if (Points[i+1].Range == 0 || i == LIDARPOINTCOUNT-2 || abs(Points[i].Range-Points[i+1].Range) > 200) {
+				//if (Points[i+1].Range == 0 || i == LIDARPOINTCOUNT-2 || pow(Points[i].X-Points[i+1].X,2)+pow(Points[i].Y-Points[i+1].Y,2) > 40000) {
+				//if (Points[i+1].Range == 0 || i == LIDARPOINTCOUNT-2 || abs(Points[i].Range-Points[i+1].Range) > 200) {
+				if (Points[i+1].Range == 0 || i == LIDARPOINTCOUNT-2) {
 					//Next point is zero OR last point of scan OR big distance between two consecutive points
 					if (SplitMergeHead == NULL) {
 						SplitMergeHead = SplitMerge(Points,IndexStart,i,100);
@@ -222,7 +225,7 @@ void CApp::OnLoop() {
 		
 		//----------------------------------------------------------------------------------
 		//-------------------------------Testing ScanMatching-------------------------------
-		/*
+#if DEMO == 0
 		//Drawing on Surf_Odometry
 		xMid = Surf_Odometry->w/2;
 		yMid = Surf_Odometry->h/2;
@@ -239,20 +242,11 @@ void CApp::OnLoop() {
 			sprintf_s(str,"Diff:%.1f",RAD2DEG(IMUTheta));
 			CSurface::OnDraw(Surf_Display,TTF_RenderText_Blended(Font,str,FontColor),Surf_Display->w-410,Surf_Display->h-20);
 		}
-
-		Particles[0]->StateUpdate(Odometry);
-		int x = int(xMid + Zoom*Particles[0]->X);
-		int y = int(yMid - Zoom*Particles[0]->Y);
-		for (int k = -1; k <= 1; k++) {
-			for (int j = -1; j <= 1; j++) {
-				CSurface::PutPixel(Surf_Odometry,x+j,y+k,255,0,0);
-			}
-		}
 		//Draw current points
 		for (uint16_t i = 0; i < LIDARPOINTCOUNT; i++) {
 			int x = int(xMid + Zoom*Points[i].X);
 			int y = int(yMid - Zoom*Points[i].Y); //Window axes are different
-			CSurface::PutPixel(Surf_Display,x,y,255,255,255);
+			CSurface::PutPixel(Surf_Odometry,x,y,255,255,255);
 		}
 		//Draw unaltered previous points (red)
 		if (Previous.Points != NULL) {
@@ -263,7 +257,7 @@ void CApp::OnLoop() {
 			}
 		}
 		//Draw points transformed with IMU yaw value (green)
-		if (Previous.IMUState != NULL) {
+		/*if (Previous.IMUState != NULL) {
 			for (uint16_t i = 0; i < LIDARPOINTCOUNT; i++) {
 				float drawX = Points[i].X;
 				float drawY = Points[i].Y;
@@ -273,7 +267,7 @@ void CApp::OnLoop() {
 				int y = int(yMid - Zoom*drawY);
 				CSurface::PutPixel(Surf_Odometry,x,y,0,255,0);
 			}
-		}
+		}*/
 		//Draw transformed points (yellow)
 		//Yellow should overlap with red
 		if (Odometry != NULL) {
@@ -282,13 +276,15 @@ void CApp::OnLoop() {
 				float drawY = Points[i].Y;
 				drawX = drawX*cos(Odometry->Theta)-drawY*sin(Odometry->Theta);
 				drawY = drawX*sin(Odometry->Theta)+drawY*cos(Odometry->Theta);
+				drawX += Odometry->X;
+				drawY += Odometry->Y;
 				int x = int(xMid + Zoom*drawX);
 				int y = int(yMid - Zoom*drawY);
 				CSurface::PutPixel(Surf_Odometry,x,y,255,255,0);
 			}
 			
 		}
-		*/
+#endif
 		//-------------------------------Testing ScanMatching-------------------------------
 		//----------------------------------------------------------------------------------
 
@@ -296,7 +292,7 @@ void CApp::OnLoop() {
 
 		
 
-
+#if DEMO == 1
 		//-----------------------------------------------------------------------------
 		//-------------------------------Particle Filter-------------------------------
 		//Particle filter
@@ -322,10 +318,10 @@ void CApp::OnLoop() {
 						}
 					} else {
 						//All are "new"
-						//for (uint16_t j = 0; j < CornersHolderGlobal->Count; j++) {
-						//	Particles[i]->AddCorner(&CornersHolderGlobal->Corners[j]);
+						for (uint16_t j = 0; j < CornersHolderGlobal->Count; j++) {
+							Particles[i]->AddCorner(&CornersHolderGlobal->Corners[j]);
 						//	Particles[i]->Weight *= 1e-50; //Penalty
-						//}
+						}
 
 						Particles[i]->Weight = 0; //Almost kills the particle
 
@@ -355,9 +351,9 @@ void CApp::OnLoop() {
 		//---------------------------------Visualising SLAM---------------------------------
 
 		//Drawing on display
-		xMid = Surf_Display->w/2;
-		yMid = Surf_Display->h/2;
-		Zoom = 0.2F*float(Surf_Display->w)/LIDARCLIPPINGRANGE;
+		xMid = Surf_Map->w/2;
+		yMid = Surf_Map->h/2;
+		Zoom = 0.4F*float(Surf_Map->w)/LIDARCLIPPINGRANGE;
 
 		//Find particle with fewest corners
 		uint16_t Chosen = 0;
@@ -378,9 +374,11 @@ void CApp::OnLoop() {
 			int x3 = x+int(length*cos(Particles[Chosen]->CornersHolder->Corners[i].Heading+Particles[Chosen]->CornersHolder->Corners[i].Angle/2+PI));
 			int y3 = y-int(length*sin(Particles[Chosen]->CornersHolder->Corners[i].Heading+Particles[Chosen]->CornersHolder->Corners[i].Angle/2+PI));
 
-			CSurface::DrawLine(Surf_Display,x,y,x2,y2,0,255,0);
-			CSurface::DrawLine(Surf_Display,x,y,x3,y3,0,255,0);
+			CSurface::DrawLine(Surf_Map,x,y,x2,y2,0,255,0);
+			CSurface::DrawLine(Surf_Map,x,y,x3,y3,0,255,0);
 
+			//sprintf_s(str,"%.1f",RAD2DEG(Particles[Chosen]->CornersHolder->Corners[i].Angle));
+			//CSurface::OnDraw(Surf_Map,TTF_RenderText_Blended(Font,str,FontColor),x,y);
 		}
 		//Draw all particles relative to map
 		for (uint16_t i = 0; i < PARTICLECOUNT; i++) {
@@ -389,32 +387,32 @@ void CApp::OnLoop() {
 				int y = int(yMid - Zoom*Particles[i]->Y);
 				for (int k = -1; k <= 1; k++) {
 					for (int j = -1; j <= 1; j++) {
-						CSurface::PutPixel(Surf_Display,x+j,y+k,255,255,255);
+						CSurface::PutPixel(Surf_Map,x+j,y+k,255,255,255);
 					}
 				}
 				//Draw heading
 				float length = Zoom*500;
 				int x2 = x+int(length*cos(Particles[i]->Theta+PI/2));
 				int y2 = y-int(length*sin(Particles[i]->Theta+PI/2));
-				CSurface::DrawLine(Surf_Display,x,y,x2,y2,255,255,255);
+				CSurface::DrawLine(Surf_Map,x,y,x2,y2,255,255,255);
 			}
 		}
 		int x = int(xMid + Zoom*Particles[Chosen]->X);
 		int y = int(yMid - Zoom*Particles[Chosen]->Y);
 		for (int k = -3; k <= 3; k++) {
 			for (int j = -3; j <= 3; j++) {
-				CSurface::PutPixel(Surf_Display,x+j,y+k,255,0,0);
+				CSurface::PutPixel(Surf_Map,x+j,y+k,255,0,0);
 			}
 		}
 		//Draw heading
 		float length = Zoom*500;
 		int x2 = x+int(length*cos(Particles[Chosen]->Theta+PI/2));
 		int y2 = y-int(length*sin(Particles[Chosen]->Theta+PI/2));
-		CSurface::DrawLine(Surf_Display,x,y,x2,y2,255,0,0);	
+		CSurface::DrawLine(Surf_Map,x,y,x2,y2,255,0,0);	
 		
 		//---------------------------------Visualising SLAM---------------------------------
 		//----------------------------------------------------------------------------------
-
+#endif
 		
 
 

@@ -29,6 +29,7 @@ class CApp : public CEvent {
 	private:
 		LIDAR UTM30;
 		IMU sbgIMU;
+		SDL_Surface* Surf_Map;
 		SDL_Surface* Surf_Overlay;
 		SDL_Surface* Surf_Odometry;
 		HistoryClass Previous;

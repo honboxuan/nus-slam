@@ -7,6 +7,7 @@ void CApp::OnCleanup() {
 	delete[] Particles;
 
 	SDL_FreeSurface(Surf_Display);
+	SDL_FreeSurface(Surf_Map);
 	SDL_FreeSurface(Surf_Overlay);
 	SDL_FreeSurface(Surf_Odometry);
 	TTF_CloseFont(Font);

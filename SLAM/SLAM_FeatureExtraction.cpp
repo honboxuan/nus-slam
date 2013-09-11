@@ -230,9 +230,9 @@ CornersHolderClass* CornerExtraction(LinesHolderClass* LinesHolder) {
 					//Limit acceptable corner angles
 					float Angle = abs(LinesHolder->Lines[i+1].Theta-LinesHolder->Lines[i].Theta);
 					if (Angle > PI) {
-						Angle -= PI;
+						Angle = 2*PI-Angle;
 					}
-					if (Angle > DEG2RAD(45) && Angle < DEG2RAD(135)) {
+					if (Angle > DEG2RAD(60) && Angle < DEG2RAD(150)) {
 						if (Head == NULL) {
 							Head = new CornerItem;
 							Head->Index = i;
@@ -292,7 +292,7 @@ CornersHolderClass* CornerExtraction(LinesHolderClass* LinesHolder) {
 
 
 			CornersHolder->Corners[i].Covariance = Eigen::Matrix4f::Identity();
-			CornersHolder->Corners[i].Covariance(2,2) = 0.001F;
+			CornersHolder->Corners[i].Covariance(2,2) = 0.01F;
 			CornersHolder->Corners[i].Covariance(3,3) = 0.0001F;
 
 			//Covariance matrix guesstimation (dropping square roots, assume uncorrelated)

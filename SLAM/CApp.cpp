@@ -2,6 +2,7 @@
 
 CApp::CApp() {
 	Surf_Display = NULL;
+	Surf_Map = NULL;
 	Surf_Overlay = NULL;
 	Surf_Odometry = NULL;
 	Font = NULL;
