@@ -1,5 +1,5 @@
 #ifndef _CAPP_H_
-	#define _CAPP_H_
+#define _CAPP_H_
 
 #include <SDL.h>
 #include <SDL_ttf.h>

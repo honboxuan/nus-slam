@@ -1,5 +1,5 @@
 #ifndef _CSURFACE_H
-	#define _CSURFACE_H
+#define _CSURFACE_H
 
 #include <math.h>
 #include <SDL.h>
