@@ -1,7 +1,6 @@
 #ifndef _SLAM_H_
 #define _SLAM_H_
 
-#include <algorithm>
 #include <Eigen\Dense>
 #include <fstream>
 #include <math.h>
