@@ -1,6 +1,7 @@
 #ifndef _SLAM_H_
 	#define _SLAM_H_
 
+#include <algorithm>
 #include <Eigen\Dense>
 #include <fstream>
 #include <math.h>
@@ -30,8 +31,8 @@
 
 //Particle allocation
 #define PARTICLEINITIALWEIGHT 1e200 //Using double
-#define PARTICLECOUNT 1000
-#define FEATURESBLOCKSIZE 100
+#define PARTICLECOUNT 500
+#define FEATURESBLOCKSIZE 10
 
 //---------------------------------------------------
 //--------------------MapElements--------------------
@@ -179,6 +180,7 @@ class ParticleClass {
 	public:
 		ParticleClass();
 		~ParticleClass();
+		ParticleClass(const ParticleClass &Original);
 		bool StateUpdate(OdometryClass* Odometry);
 		
 		//Needs map management method(s)

@@ -4,14 +4,29 @@ ParticleClass::ParticleClass() {
 	X = 0;
 	Y = 0;
 	Theta = 0;
-	Weight = PARTICLEINITIALWEIGHT;
-	TimesSelected = 0;
 	Covariance = Eigen::Matrix3f::Identity();
 	CornersAllocatedCount = 0;
+	Weight = PARTICLEINITIALWEIGHT;
+	TimesSelected = 0;
 	CornersHolder = new CornersHolderClass;
 }
 ParticleClass::~ParticleClass() {
 	delete CornersHolder;
+}
+ParticleClass::ParticleClass(const ParticleClass &Original) {
+	X = Original.X;
+	Y = Original.Y;
+	Theta = Original.Theta;
+	Covariance = Original.Covariance;
+	CornersAllocatedCount = Original.CornersAllocatedCount;
+	Weight = Original.Weight;
+	TimesSelected = 0;
+	CornersHolder = new CornersHolderClass;
+	CornersHolder->Count = Original.CornersHolder->Count;
+	CornersHolder->Corners = new CornerClass[CornersAllocatedCount];
+	for (uint16_t i = 0; i < CornersHolder->Count; i++) {
+		CornersHolder->Corners[i] = Original.CornersHolder->Corners[i];
+	}
 }
 bool ParticleClass::StateUpdate(OdometryClass* Odometry) {
 	if (Odometry != NULL) {
@@ -85,11 +100,7 @@ void ParticleClass::AddCorner(CornerClass* Corner) {
 	if (CornersHolder->Count == CornersAllocatedCount) {
 		CornersMemoryExpansion();
 	}
-	CornersHolder->Corners[CornersHolder->Count].X = Corner->X;
-	CornersHolder->Corners[CornersHolder->Count].Y = Corner->Y;
-	CornersHolder->Corners[CornersHolder->Count].Angle = Corner->Angle;
-	CornersHolder->Corners[CornersHolder->Count].Heading = Corner->Heading;
-	CornersHolder->Corners[CornersHolder->Count].Covariance = Corner->Covariance;
+	CornersHolder->Corners[CornersHolder->Count] = *Corner;
 	CornersHolder->Count++;
 }
 void ParticleClass::CornersMemoryExpansion() {
@@ -97,11 +108,7 @@ void ParticleClass::CornersMemoryExpansion() {
 	CornersAllocatedCount += FEATURESBLOCKSIZE;
 	CornerClass* BlockNew = new CornerClass[CornersAllocatedCount];
 	for (uint16_t i = 0; i < CornersHolder->Count; i++) {
-		BlockNew[i].X = CornersHolder->Corners[i].X;
-		BlockNew[i].Y = CornersHolder->Corners[i].Y;
-		BlockNew[i].Angle = CornersHolder->Corners[i].Angle;
-		BlockNew[i].Heading = CornersHolder->Corners[i].Heading;
-		BlockNew[i].Covariance = CornersHolder->Corners[i].Covariance;
+		BlockNew[i] = CornersHolder->Corners[i];
 	}
 	delete[] CornersHolder->Corners;
 	CornersHolder->Corners = BlockNew;
@@ -170,27 +177,8 @@ ParticleClass** ParticleResample(ParticleClass** Particles) {
 		if (Particles[Index]->TimesSelected == 0) {
 			Selected[i] = Particles[Index];
 		} else {
-			//Create a copy
-			//This is extremely bad
-			Selected[i] = new ParticleClass;
-			Selected[i]->X = Particles[Index]->X;
-			Selected[i]->Y = Particles[Index]->Y;
-			Selected[i]->Theta = Particles[Index]->Theta;
-			Selected[i]->Covariance = Particles[Index]->Covariance;
-			Selected[i]->CornersAllocatedCount = Particles[Index]->CornersAllocatedCount;
-			Selected[i]->Weight = Particles[Index]->Weight;
-
-			if (Selected[i]->CornersAllocatedCount != 0) {
-				Selected[i]->CornersHolder->Corners = new CornerClass[Selected[i]->CornersAllocatedCount];
-				Selected[i]->CornersHolder->Count = Particles[Index]->CornersHolder->Count;
-				for (uint16_t j = 0; j < Selected[i]->CornersHolder->Count; j++) {
-					Selected[i]->CornersHolder->Corners[j].X = Particles[Index]->CornersHolder->Corners[j].X;
-					Selected[i]->CornersHolder->Corners[j].Y = Particles[Index]->CornersHolder->Corners[j].Y;
-					Selected[i]->CornersHolder->Corners[j].Angle = Particles[Index]->CornersHolder->Corners[j].Angle;
-					Selected[i]->CornersHolder->Corners[j].Heading = Particles[Index]->CornersHolder->Corners[j].Heading;
-					Selected[i]->CornersHolder->Corners[j].Covariance = Particles[Index]->CornersHolder->Corners[j].Covariance;
-				}
-			}
+			//Create deep copy
+			Selected[i] = new ParticleClass(*Particles[Index]);
 		}
 		Particles[Index]->TimesSelected++;
 	}

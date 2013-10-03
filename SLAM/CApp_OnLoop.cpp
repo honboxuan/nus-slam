@@ -1,6 +1,6 @@
 #include "CApp.h"
 
-#define DEMO 0
+#define DEMO 1
 
 void CApp::OnLoop() {
 	//SDL_Delay(20);
